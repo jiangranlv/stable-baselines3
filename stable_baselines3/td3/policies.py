@@ -49,7 +49,6 @@ class Actor(BasePolicy):
             normalize_images=normalize_images,
             squash_output=True,
         )
-
         self.net_arch = net_arch
         self.features_dim = features_dim
         self.activation_fn = activation_fn
@@ -120,6 +119,8 @@ class TD3Policy(BasePolicy):
         optimizer_kwargs: Optional[Dict[str, Any]] = None,
         n_critics: int = 2,
         share_features_extractor: bool = False,
+        feature_extractor_kwargs_actor = None,
+        feature_extractor_kwargs_critic = None,
     ):
         super().__init__(
             observation_space,
@@ -162,6 +163,9 @@ class TD3Policy(BasePolicy):
         self.actor, self.actor_target = None, None
         self.critic, self.critic_target = None, None
         self.share_features_extractor = share_features_extractor
+
+        self.features_extractor_kwargs_actor = feature_extractor_kwargs_actor
+        self.features_extractor_kwargs_critic = feature_extractor_kwargs_critic
 
         self._build(lr_schedule)
 
@@ -214,10 +218,14 @@ class TD3Policy(BasePolicy):
         return data
 
     def make_actor(self, features_extractor: Optional[BaseFeaturesExtractor] = None) -> Actor:
+        if self.features_extractor_kwargs_actor is not None:
+            self.features_extractor_kwargs = self.features_extractor_kwargs_actor
         actor_kwargs = self._update_features_extractor(self.actor_kwargs, features_extractor)
         return Actor(**actor_kwargs).to(self.device)
 
     def make_critic(self, features_extractor: Optional[BaseFeaturesExtractor] = None) -> ContinuousCritic:
+        if self.features_extractor_kwargs_critic is not None:
+            self.features_extractor_kwargs = self.features_extractor_kwargs_critic
         critic_kwargs = self._update_features_extractor(self.critic_kwargs, features_extractor)
         return ContinuousCritic(**critic_kwargs).to(self.device)
 
